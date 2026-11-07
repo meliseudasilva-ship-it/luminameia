@@ -179,9 +179,12 @@
                     <p class="text-[10px] text-purple-300 font-semibold tracking-widest uppercase">Inteligência Artificial</p>
                 </div>
             </div>
-            <div class="hidden md:flex items-center space-x-2 text-sm text-slate-400 font-medium bg-slate-800/50 px-4 py-2 rounded-full">
-                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
-                <span>IA Engine Online</span>
+            <div class="hidden md:flex items-center space-x-3">
+                <input type="password" id="apiKeyInput" placeholder="Insira sua Chave API Gemini" class="bg-slate-900 border border-slate-700 text-white text-xs px-3 py-2 rounded-lg focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 w-48 shadow-inner placeholder-slate-500 transition-all" title="Cole sua chave gerada no Google AI Studio">
+                <div class="flex items-center space-x-2 text-sm text-slate-400 font-medium bg-slate-800/50 px-4 py-2 rounded-full border border-slate-700/50">
+                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                    <span>IA Engine Online</span>
+                </div>
             </div>
         </div>
     </header>
@@ -415,6 +418,9 @@
         }
 
         // --- AI Processing Logic (Gemini 3.1 Flash Image) ---
+        // SE DESEJAR DEIXAR A CHAVE SALVA DIRETO NO CÓDIGO, COLE ELA DENTRO DAS ASPAS ABAIXO:
+        const CHAVE_API_FIXA = ""; // Exemplo: "AIzaSyD_..."
+
         async function startProcessing() {
             step1.classList.add('hidden');
             heroText.classList.add('hidden');
@@ -438,8 +444,11 @@
             }, 2500);
 
             try {
-                // A chave da API fica vazia conforme as instruções para rodar no ambiente interativo
-                const apiKey = ""; 
+                // Lendo a chave de API do input no cabeçalho
+                const apiKeyValue = document.getElementById('apiKeyInput') ? document.getElementById('apiKeyInput').value.trim() : "";
+                // Usa a chave digitada no site, ou a chave fixa do código, ou vazio (para rodar aqui no Gemini).
+                const apiKey = apiKeyValue || CHAVE_API_FIXA || ""; 
+                
                 const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent?key=${apiKey}`;
                 
                 const payload = {
@@ -478,6 +487,8 @@
                     setTimeout(() => {
                         showFinalResult(restoredImageSrc);
                     }, 800);
+                } else if (result.error) {
+                    throw new Error(result.error.message || "Erro retornado pela API");
                 } else {
                     throw new Error("Formato de resposta inesperado da IA.");
                 }
@@ -485,7 +496,14 @@
             } catch (error) {
                 console.error("Erro na restauração:", error);
                 clearInterval(textInterval);
-                showToast("Ocorreu um erro ao processar a imagem. Tente novamente.", "error");
+                
+                // Verifica se o erro pode ser falta de chave de API
+                const apiInput = document.getElementById('apiKeyInput');
+                if (error.message.includes("400") || (apiInput && apiInput.value.trim() === '')) {
+                    showToast("Erro: Insira sua Chave API do Gemini no topo da página.", "error");
+                } else {
+                    showToast("Ocorreu um erro ao processar a imagem. Tente novamente.", "error");
+                }
                 resetApp();
             }
         }
